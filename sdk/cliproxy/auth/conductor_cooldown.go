@@ -927,7 +927,29 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 //DISABLED_CREDENTIAL_SCOPE: 								auth.Quota.NextRecoverAt = authNext
 //DISABLED_CREDENTIAL_SCOPE: 								auth.NextRetryAfter = authNext
 //DISABLED_CREDENTIAL_SCOPE: 							}
-						case 408, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526:
+							case 503:
+								var next503 time.Time
+								backoff503 := state.Quota.BackoffLevel
+								if !disableCooling {
+									if result.RetryAfter != nil {
+										cooldown := *result.RetryAfter
+										if cooldown < minQuotaCooldownFloor {
+											cooldown = minQuotaCooldownFloor
+										}
+										next503 = now.Add(cooldown).Round(0)
+									} else {
+										next503, backoff503 = quotaCooldownAfterFailure(state.Quota, now)
+									}
+								}
+								state.NextRetryAfter = next503
+								state.Unavailable = !next503.IsZero()
+								applyCooldownFields(&state.Quota, QuotaState{
+									Exceeded:      true,
+									Reason:        "service_unavailable",
+									NextRecoverAt: next503,
+									BackoffLevel:  backoff503,
+								})
+						case 408, 500, 502, 504, 520, 521, 522, 523, 524, 525, 526:
 							state.NextRetryAfter = recoverableFailureRetryAfterWithHint(now, result.RetryAfter, disableCooling)
 							state.Unavailable = !state.NextRetryAfter.IsZero()
 						default:
