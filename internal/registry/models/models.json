@@ -45,63 +45,6 @@
       ]
     },
     {
-      "id": "claude-sonnet-4-6",
-      "object": "model",
-      "created": 1771372800,
-      "owned_by": "anthropic",
-      "type": "claude",
-      "display_name": "Claude 4.6 Sonnet",
-      "context_length": 200000,
-      "max_completion_tokens": 64000,
-      "thinking": {
-        "min": 1024,
-        "max": 128000,
-        "zero_allowed": true,
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "max"
-        ]
-      },
-      "supportedInputModalities": [
-        "text",
-        "image"
-      ],
-      "supportedOutputModalities": [
-        "text"
-      ]
-    },
-    {
-      "id": "claude-opus-4-6",
-      "object": "model",
-      "created": 1770318000,
-      "owned_by": "anthropic",
-      "type": "claude",
-      "display_name": "Claude 4.6 Opus",
-      "description": "Premium model combining maximum intelligence with practical performance",
-      "context_length": 1000000,
-      "max_completion_tokens": 128000,
-      "thinking": {
-        "min": 1024,
-        "max": 128000,
-        "zero_allowed": true,
-        "levels": [
-          "low",
-          "medium",
-          "high",
-          "max"
-        ]
-      },
-      "supportedInputModalities": [
-        "text",
-        "image"
-      ],
-      "supportedOutputModalities": [
-        "text"
-      ]
-    },
-    {
       "id": "claude-opus-4-7",
       "object": "model",
       "created": 1776297600,
