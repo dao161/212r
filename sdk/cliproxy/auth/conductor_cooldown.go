@@ -893,40 +893,40 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 								NextRecoverAt: next,
 								BackoffLevel:  backoffLevel,
 							})
-							if result.CredentialScope && !disableCooling {
-								for _, otherState := range auth.ModelStates {
-									if otherState != nil && otherState != state {
-										otherState.Unavailable = true
-										otherState.Status = StatusError
-										otherQuotaNext := next
-										if otherState.Quota.Exceeded && otherState.Quota.NextRecoverAt.After(otherQuotaNext) {
-											otherQuotaNext = otherState.Quota.NextRecoverAt
-										}
-										otherRetryAfter := otherQuotaNext
+//DISABLED_CREDENTIAL_SCOPE: 							if result.CredentialScope && !disableCooling {
+//DISABLED_CREDENTIAL_SCOPE: 								for _, otherState := range auth.ModelStates {
+//DISABLED_CREDENTIAL_SCOPE: 									if otherState != nil && otherState != state {
+//DISABLED_CREDENTIAL_SCOPE: 										otherState.Unavailable = true
+//DISABLED_CREDENTIAL_SCOPE: 										otherState.Status = StatusError
+//DISABLED_CREDENTIAL_SCOPE: 										otherQuotaNext := next
+//DISABLED_CREDENTIAL_SCOPE: 										if otherState.Quota.Exceeded && otherState.Quota.NextRecoverAt.After(otherQuotaNext) {
+//DISABLED_CREDENTIAL_SCOPE: 											otherQuotaNext = otherState.Quota.NextRecoverAt
+//DISABLED_CREDENTIAL_SCOPE: 										}
+//DISABLED_CREDENTIAL_SCOPE: 										otherRetryAfter := otherQuotaNext
 										// Propagation only extends a sibling's still-live
 										// per-model deadline; it never shortens one.
-										if !otherState.NextRetryAfter.IsZero() && otherState.NextRetryAfter.After(otherRetryAfter) {
-											otherRetryAfter = otherState.NextRetryAfter
-										}
-										otherState.NextRetryAfter = otherRetryAfter
-										applyCooldownFields(&otherState.Quota, QuotaState{
-											Exceeded:      true,
-											Reason:        "credential_quota",
-											NextRecoverAt: otherQuotaNext,
-											BackoffLevel:  backoffLevel,
-										})
-									}
-								}
-								auth.Unavailable = true
-								auth.Quota.Exceeded = true
-								auth.Quota.Reason = "credential_quota"
-								authNext := next
-								if auth.Quota.NextRecoverAt.After(authNext) {
-									authNext = auth.Quota.NextRecoverAt
-								}
-								auth.Quota.NextRecoverAt = authNext
-								auth.NextRetryAfter = authNext
-							}
+//DISABLED_CREDENTIAL_SCOPE: 										if !otherState.NextRetryAfter.IsZero() && otherState.NextRetryAfter.After(otherRetryAfter) {
+//DISABLED_CREDENTIAL_SCOPE: 											otherRetryAfter = otherState.NextRetryAfter
+//DISABLED_CREDENTIAL_SCOPE: 										}
+//DISABLED_CREDENTIAL_SCOPE: 										otherState.NextRetryAfter = otherRetryAfter
+//DISABLED_CREDENTIAL_SCOPE: 										applyCooldownFields(&otherState.Quota, QuotaState{
+//DISABLED_CREDENTIAL_SCOPE: 											Exceeded:      true,
+//DISABLED_CREDENTIAL_SCOPE: 											Reason:        "credential_quota",
+//DISABLED_CREDENTIAL_SCOPE: 											NextRecoverAt: otherQuotaNext,
+//DISABLED_CREDENTIAL_SCOPE: 											BackoffLevel:  backoffLevel,
+//DISABLED_CREDENTIAL_SCOPE: 										})
+//DISABLED_CREDENTIAL_SCOPE: 									}
+//DISABLED_CREDENTIAL_SCOPE: 								}
+//DISABLED_CREDENTIAL_SCOPE: 								auth.Unavailable = true
+//DISABLED_CREDENTIAL_SCOPE: 								auth.Quota.Exceeded = true
+//DISABLED_CREDENTIAL_SCOPE: 								auth.Quota.Reason = "credential_quota"
+//DISABLED_CREDENTIAL_SCOPE: 								authNext := next
+//DISABLED_CREDENTIAL_SCOPE: 								if auth.Quota.NextRecoverAt.After(authNext) {
+//DISABLED_CREDENTIAL_SCOPE: 									authNext = auth.Quota.NextRecoverAt
+//DISABLED_CREDENTIAL_SCOPE: 								}
+//DISABLED_CREDENTIAL_SCOPE: 								auth.Quota.NextRecoverAt = authNext
+//DISABLED_CREDENTIAL_SCOPE: 								auth.NextRetryAfter = authNext
+//DISABLED_CREDENTIAL_SCOPE: 							}
 						case 408, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526:
 							state.NextRetryAfter = recoverableFailureRetryAfterWithHint(now, result.RetryAfter, disableCooling)
 							state.Unavailable = !state.NextRetryAfter.IsZero()

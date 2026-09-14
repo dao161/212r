@@ -68,7 +68,7 @@ func (s *Server) setupRoutes() {
 			return
 		}
 		c.Next()
-		if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
+		if !c.IsAborted() && c.Writer.Status() != 429 && c.Writer.Status() < 500 {
 			managementHandlers.RecordSuccessRequest()
 		}
 	})

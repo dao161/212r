@@ -12,9 +12,12 @@ import (
 // Independent lock models for dashboard display
 var independentLockModels = []string{
 	"claude-opus-4-6-thinking",
+	"gemini-3.1-flash-lite",
+	"gemini-3.5-flash-lite",
 	"gemini-3.6-flash-high",
 	"gemini-3.7-flash-high",
 	"gemini-3.8-flash-high",
+	"gemini-3-flash",
 	"gemini-3.1-flash-image",
 	"gemini-3.1-pro-low",
 }
@@ -80,6 +83,7 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 		modelLocked[m] = 0
 	}
 
+	var lockedAccountsList []gin.H
 	for _, auth := range auths {
 		if auth == nil {
 			continue
@@ -129,12 +133,29 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 					}
 				}
 			}
-			if !auth.Unavailable && !is403 {
+			if !is403 {
 				modelAvailable[modelName]++
 			}
 		}
-	}
+		// Track locked accounts
+		if auth.ModelStates != nil {
+			hasLock := false
+			mlocks := make([]gin.H, 0)
+			for _, mn := range independentLockModels {
+				st, ok := auth.ModelStates[mn]
+				if ok && st != nil && !st.NextRetryAfter.IsZero() && st.NextRetryAfter.After(now) {
+					hasLock = true
+					mlocks = append(mlocks, gin.H{"model": mn, "locked": true, "expires": st.NextRetryAfter, "remaining_seconds": int(st.NextRetryAfter.Sub(now).Seconds())})
+				} else {
+					mlocks = append(mlocks, gin.H{"model": mn, "locked": false})
+				}
+			}
+			if hasLock {
+				lockedAccountsList = append(lockedAccountsList, gin.H{"name": auth.FileName, "models": mlocks})
+			}
+		}
 
+	}
 	// Model stats
 	modelStats := make([]gin.H, 0, len(independentLockModels))
 	for _, modelName := range independentLockModels {
@@ -165,6 +186,7 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 			"heap_objects":   memStats.HeapObjects,
 			"goroutines":    runtime.NumGoroutine(),
 		},
+		"locked_accounts": lockedAccountsList,
 		"rate_limit": gin.H{
 			"success_count":    requestSuccessCount.Load(),
 			"limit_per_minute": requestPerMinuteLimit.Load(),
@@ -213,4 +235,87 @@ func (h *Handler) GetMemoryStats(c *gin.Context) {
 		"goroutines":    runtime.NumGoroutine(),
 		"gc_cycles":     memStats.NumGC,
 	})
+}
+
+// Memory limit in bytes (0 = no limit)
+var memoryLimitBytes atomic.Int64
+
+// DeleteForbiddenAccounts removes all accounts with 403 status and returns the list.
+func (h *Handler) DeleteForbiddenAccounts(c *gin.Context) {
+	if h == nil || h.authManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "auth manager unavailable"})
+		return
+	}
+
+	auths := h.authManager.List()
+	var removed []gin.H
+	for _, auth := range auths {
+		if auth == nil || auth.Disabled {
+			continue
+		}
+		if auth.LastError != nil && auth.LastError.HTTPStatus == 403 {
+			email := ""
+			rt := ""
+			if auth.Metadata != nil {
+				if e, ok := auth.Metadata["email"].(string); ok {
+					email = e
+				}
+				if r, ok := auth.Metadata["refresh_token"].(string); ok {
+					rt = r
+				}
+			}
+			removed = append(removed, gin.H{
+				"name":  auth.FileName,
+				"email": email,
+				"rt":    rt,
+			})
+			h.authManager.Remove(c.Request.Context(), auth.ID)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "ok",
+		"removed": len(removed),
+		"list":    removed,
+	})
+}
+
+// GetMemoryLimit returns current memory limit.
+func (h *Handler) GetMemoryLimit(c *gin.Context) {
+	limitMB := memoryLimitBytes.Load() / 1024 / 1024
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	c.JSON(http.StatusOK, gin.H{
+		"limit_mb":   limitMB,
+		"current_mb": memStats.Alloc / 1024 / 1024,
+		"sys_mb":     memStats.Sys / 1024 / 1024,
+	})
+}
+
+// SetMemoryLimit sets memory limit in GB.
+func (h *Handler) SetMemoryLimit(c *gin.Context) {
+	var req struct {
+		LimitGB float64 `json:"limit_gb"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+	if req.LimitGB < 0 {
+		req.LimitGB = 0
+	}
+	bytes := int64(req.LimitGB * 1024 * 1024 * 1024)
+	memoryLimitBytes.Store(bytes)
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "limit_gb": req.LimitGB})
+}
+
+// CheckMemoryLimit checks if memory usage exceeds the configured limit.
+// Returns true if limit exceeded.
+func CheckMemoryLimit() bool {
+	limit := memoryLimitBytes.Load()
+	if limit <= 0 {
+		return false
+	}
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	return int64(memStats.Alloc) > limit
 }

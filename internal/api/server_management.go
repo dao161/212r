@@ -188,6 +188,9 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/rate-limit", s.mgmt.GetRequestRateLimit)
 		mgmt.PUT("/rate-limit", s.mgmt.SetRequestRateLimit)
 		mgmt.PATCH("/rate-limit", s.mgmt.SetRequestRateLimit)
+		mgmt.DELETE("/forbidden-accounts", s.mgmt.DeleteForbiddenAccounts)
+		mgmt.GET("/memory-limit", s.mgmt.GetMemoryLimit)
+		mgmt.PUT("/memory-limit", s.mgmt.SetMemoryLimit)
 
 		mgmt.GET("/anthropic-auth-url", s.mgmt.RequestAnthropicToken)
 		mgmt.GET("/codex-auth-url", s.mgmt.RequestCodexToken)
