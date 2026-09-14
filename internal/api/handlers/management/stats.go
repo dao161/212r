@@ -11,6 +11,7 @@ import (
 
 // Independent lock models for dashboard display
 var independentLockModels = []string{
+	"claude-opus-4-6",
 	"claude-opus-4-6-thinking",
 	"gemini-3.1-flash-lite",
 	"gemini-3.5-flash-lite",
@@ -118,7 +119,7 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 			}
 		}
 
-		if !auth.Unavailable && !is403 {
+		if !is403 {
 			availableAccounts++
 		}
 

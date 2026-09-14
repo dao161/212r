@@ -3467,6 +3467,30 @@
   ],
   "antigravity": [
     {
+      "id": "claude-opus-4-6",
+      "object": "model",
+      "owned_by": "antigravity",
+      "type": "antigravity",
+      "display_name": "Claude Opus 4.6",
+      "name": "claude-opus-4-6",
+      "description": "Claude Opus 4.6",
+      "context_length": 200000,
+      "max_completion_tokens": 64000,
+      "thinking": {
+        "min": 1024,
+        "max": 64000,
+        "zero_allowed": true,
+        "dynamic_allowed": true
+      },
+      "supportedInputModalities": [
+        "text",
+        "image"
+      ],
+      "supportedOutputModalities": [
+        "text"
+      ]
+    },
+    {
       "id": "claude-opus-4-6-thinking",
       "object": "model",
       "owned_by": "antigravity",
@@ -3771,7 +3795,6 @@
         "text"
       ]
     }
-
   ],
   "xai": [
     {
