@@ -788,9 +788,15 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 			if auth.Quota.Reason == "credential_quota" && auth.Quota.NextRecoverAt.After(now) {
 				// Retain active credential-scoped cooldown
 			} else if modelKey != "" {
-				state := ensureModelState(auth, modelKey)
-				modelState = state
-				resetModelState(state, now)
+				existing := existingModelState(auth, modelKey)
+				if existing != nil && !existing.NextRetryAfter.IsZero() && existing.NextRetryAfter.After(now) {
+					// Active cooldown lock not expired yet - do not clear
+					modelState = existing
+				} else {
+					state := ensureModelState(auth, modelKey)
+					modelState = state
+					resetModelState(state, now)
+				}
 				updateAggregatedAvailability(auth, now)
 				if !hasModelError(auth, now) {
 					auth.LastError = nil
@@ -2183,12 +2189,12 @@ func nextQuotaCooldown(prevLevel int, disableCooling bool) (time.Duration, int) 
 	if disableCooling {
 		return 0, prevLevel
 	}
-	cooldown := quotaBackoffBase * time.Duration(1<<prevLevel)
-	if cooldown < quotaBackoffBase {
-		cooldown = quotaBackoffBase
-	}
-	if cooldown >= quotaBackoffMax {
-		return quotaBackoffMax, prevLevel
+	// Short lock: first 6 times = 10min, 7th+ = 30min
+	var cooldown time.Duration
+	if prevLevel < 6 {
+		cooldown = 10 * time.Minute
+	} else {
+		cooldown = 30 * time.Minute
 	}
 	return cooldown, prevLevel + 1
 }

@@ -410,7 +410,15 @@ func (s *Service) applyRetryConfig(cfg *config.Config) {
 		return
 	}
 	maxInterval := time.Duration(cfg.MaxRetryInterval) * time.Second
-	s.coreManager.SetRetryConfig(cfg.RequestRetry, maxInterval, cfg.MaxRetryCredentials)
+	retry := cfg.RequestRetry
+	if retry <= 0 {
+		retry = 5 // default: 5 retry rounds
+	}
+	maxCreds := cfg.MaxRetryCredentials
+	if maxCreds <= 0 {
+		maxCreds = 10 // default: try up to 10 different credentials per round
+	}
+	s.coreManager.SetRetryConfig(retry, maxInterval, maxCreds)
 	coreauth.SetTransientErrorCooldownSeconds(cfg.TransientErrorCooldownSeconds)
 }
 

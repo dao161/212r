@@ -182,6 +182,13 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.POST("/auth-files/refresh", s.mgmt.RefreshAuthFiles)
 		mgmt.POST("/vertex/import", s.mgmt.ImportVertexCredential)
 
+		// Custom stats and monitoring endpoints
+		mgmt.GET("/dashboard-stats", s.mgmt.GetDashboardStats)
+		mgmt.GET("/memory", s.mgmt.GetMemoryStats)
+		mgmt.GET("/rate-limit", s.mgmt.GetRequestRateLimit)
+		mgmt.PUT("/rate-limit", s.mgmt.SetRequestRateLimit)
+		mgmt.PATCH("/rate-limit", s.mgmt.SetRequestRateLimit)
+
 		mgmt.GET("/anthropic-auth-url", s.mgmt.RequestAnthropicToken)
 		mgmt.GET("/codex-auth-url", s.mgmt.RequestCodexToken)
 		mgmt.GET("/antigravity-auth-url", s.mgmt.RequestAntigravityToken)

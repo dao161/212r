@@ -61,6 +61,17 @@ func (s *Server) setupRoutes() {
 	// OpenAI compatible API routes
 	v1 := s.engine.Group("/v1")
 	v1.Use(AuthMiddleware(s.accessManager))
+	v1.Use(func(c *gin.Context) {
+		if managementHandlers.CheckRequestRateLimit() {
+			c.JSON(429, gin.H{"error": "per-minute success rate limit exceeded"})
+			c.Abort()
+			return
+		}
+		c.Next()
+		if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
+			managementHandlers.RecordSuccessRequest()
+		}
+	})
 	{
 		v1.GET("/models", s.unifiedModelsHandler(openaiHandlers, claudeCodeHandlers))
 		v1.POST("/chat/completions", openaiHandlers.ChatCompletions)
